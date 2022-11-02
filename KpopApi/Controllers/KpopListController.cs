@@ -1,4 +1,5 @@
 using KpopApi;
+using KpopApi.Models;
 using Microsoft.AspNetCore.Mvc;
 namespace KpopApi.Controllers
 {
