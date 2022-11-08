@@ -15,9 +15,11 @@ namespace KpopApi.Models
 
         [Key]
         public int Id { get; set; }
+        [Required]
         [StringLength(100)]
         [Unicode(false)]
-        public string Name { get; set; } = null!;
+        public string Name { get; set; }
+        [Required]
         [Column("Date_Debut")]
         public int DateDebut { get; set; }
 

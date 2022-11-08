@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.Extensions.Configuration;
 
 namespace KpopApi.Models
 {
@@ -23,8 +24,12 @@ namespace KpopApi.Models
         {
             if (!optionsBuilder.IsConfigured)
             {
-#warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see http://go.microsoft.com/fwlink/?LinkId=723263.
-                optionsBuilder.UseSqlServer("Server=(localdb)\\mssqllocaldb;Database=Kpop;Trusted_Connection=True");
+                IConfigurationBuilder builder = new ConfigurationBuilder()
+                    .AddJsonFile("appsettings.json", optional: false)
+                    .AddJsonFile("appsettings.development.json", optional: true);
+                IConfigurationRoot configuration = builder.Build();
+                optionsBuilder.UseSqlServer(configuration.GetConnectionString("DefaultConnection"));
+
             }
         }
 
@@ -32,8 +37,6 @@ namespace KpopApi.Models
         {
             modelBuilder.Entity<Song>(entity =>
             {
-                entity.Property(e => e.Id).ValueGeneratedNever();
-
                 entity.HasOne(d => d.Artist)
                     .WithMany(p => p.Songs)
                     .HasForeignKey(d => d.ArtistId)

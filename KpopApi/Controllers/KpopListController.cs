@@ -1,105 +1,111 @@
-using KpopApi;
-using KpopApi.Models;
+using System.Linq;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using KpopApi.Models;
+using KpopApi.Dtos;
+
 namespace KpopApi.Controllers
 {
+    [Route("api/[controller]")]
     [ApiController]
-    [Route("[controller]/[action]")]
     public class KpopListController : ControllerBase
     {
-        private static readonly string[] ArtistsList = new[]
+        private readonly KpopContext _context;
+                
+        public KpopListController(KpopContext context)
         {
-        "BTS", "BLACK PINK", "PSY", "TWICE", "IVE", "BIGBANG"
-    };
-        private static readonly string[] SongsList = new[]
-        {
-        "Butter", "Pink Venom", "That That", "Talk that Talk", "Love Dive", "Still Life"
-    };
-
-        private readonly ILogger<KpopListController> _logger;
-
-        public KpopListController(ILogger<KpopListController> logger)
-        {
-            _logger = logger;
+            _context = context;
         }
 
-        [HttpGet]
-        public IEnumerable<Artist> GetArtists()
+        // ex GET: api/Artists
+        //[Authorize]
+        [HttpGet("Artists")]
+        public async Task<ActionResult<IEnumerable<Artist>>> GetArtists()
         {
-            return Enumerable.Range(1, ArtistsList.Length).Select((v,i) => new Artist
-            {
-                Name = ArtistsList[i]
-            })
-            .ToArray();
+            return await _context.Artists.ToListAsync();
         }
 
-        [HttpGet]
-        public IEnumerable<Song> GetSongs()
+        [HttpGet("Songs")]
+        public async Task<ActionResult<IEnumerable<Song>>> GetSongs()
         {
-            return Enumerable.Range(1, SongsList.Length).Select((v,i) => new Song
+            return await _context.Songs.ToListAsync();
+        }
+
+        // GET: api/Countries/5
+        [HttpGet("Artist/{id}")]
+        public async Task<ActionResult> GetArtist(int id)
+        {
+            var artistDTO = await _context.Artists
+                .Select(c => new
+                {
+                    c.Id,
+                    c.Name,
+                    c.DateDebut,
+                })
+                .SingleOrDefaultAsync(c => c.Id == id);
+
+
+            if (artistDTO == null)
             {
-                Title = SongsList[i]
-            })
-            .ToArray();
+                return NotFound();
+            }
+
+            return Ok(artistDTO);
+        }
+
+        [HttpGet("Song/{id}")]
+        public async Task<ActionResult> GetSong(int id)
+        {
+            var songDTO = await _context.Songs
+                .Select(c => new
+                {
+                    c.Id,
+                    c.Title,
+                    c.Release,
+                    c.Summary,
+                    c.Artist.Name
+                })
+                .SingleOrDefaultAsync(c => c.Id == id);
+
+
+            if (songDTO == null)
+            {
+                return NotFound();
+            }
+
+            return Ok(songDTO);
+        }
+
+        [HttpGet("ArtistSong/{id}")]
+        public async Task<ActionResult> GetArtistWithSong(int id)
+        {
+            /*ArtistSong? artistDTO = await _context.Artists
+               .Where(c => c.Id == id)
+               .Select(c => new ArtistSong
+               {
+                   Id = c.Id,
+                   Name = c.Name,
+                   Title = c.Songs.Select(t => t.Title)
+               }).SingleOrDefaultAsync();
+            */
+            var artistDTO = await _context.Artists
+                .Select(c => new
+                {
+                    c.Id,
+                    c.Name,
+                    SongList = c.Songs
+
+                })
+                .SingleOrDefaultAsync(c => c.Id == id);
+            
+
+            if (artistDTO == null)
+            {
+                return NotFound();
+            }
+
+            return Ok(artistDTO);
         }
 
     }
 }
-
-/*
-namespace KpopApi.Controllers
-{
-    [ApiController]
-    [Route("[controller]/[action]")]
-    public class KpopListController : ControllerBase
-    {
-        private static readonly string[] Singers = new[]
-        {
-        "BTS", "BLACK PINK", "PSY", "TWICE", "IVE", "BIGBANG"
-    };
-        private static readonly string[] Songs = new[]
-        {
-        "Butter", "Pink Venom", "That That", "Talk that Talk", "Love Dive", "Still Life"
-    };
-
-        private readonly ILogger<KpopListController> _logger;
-
-        public KpopListController(ILogger<KpopListController> logger)
-        {
-            _logger = logger;
-        }
-
-        [HttpGet]
-        public IEnumerable<string> GetSingers()
-        {
-            return Singers;
-        }
-
-        [HttpGet]
-        public IEnumerable<string> GetSongs()
-        {
-            return Songs;
-        }
-         
-    }
-}*/
-
-/*
-[HttpGet]
-public IEnumerable<WeatherForecast> GetWeatherforecast()
-{
-    return Enumerable.Range(1, 5).Select(index => new WeatherForecast
-    {
-        Date = DateTime.Now.AddDays(index),
-        TemperatureC = Random.Shared.Next(-20, 55),
-        Summary = Summaries[Random.Shared.Next(Summaries.Length)]
-    })
-    .ToArray();
-}
-
-[HttpGet]
-public IEnumerable<string> GetAttributes()
-{
-    return Summaries;
-}
-*/

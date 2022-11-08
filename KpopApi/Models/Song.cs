@@ -10,9 +10,10 @@ namespace KpopApi.Models
     {
         [Key]
         public int Id { get; set; }
+        [Required]
         [StringLength(100)]
         [Unicode(false)]
-        public string Title { get; set; } = null!;
+        public string Title { get; set; }
         public int ArtistId { get; set; }
         [Column(TypeName = "date")]
         public DateTime Release { get; set; }
@@ -21,6 +22,6 @@ namespace KpopApi.Models
 
         [ForeignKey("ArtistId")]
         [InverseProperty("Songs")]
-        public virtual Artist Artist { get; set; } = null!;
+        public virtual Artist Artist { get; set; }
     }
 }
