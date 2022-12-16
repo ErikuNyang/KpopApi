@@ -1,8 +1,8 @@
-using System.Linq;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using KpopApi.Models;
 using KpopApi.Dtos;
+using Microsoft.AspNetCore.Authorization;
 
 namespace KpopApi.Controllers
 {
@@ -18,7 +18,7 @@ namespace KpopApi.Controllers
         }
 
         // ex GET: api/Artists
-        //[Authorize]
+        [Authorize]
         [HttpGet("Artists")]
         public async Task<ActionResult<IEnumerable<Artist>>> GetArtists()
         {

@@ -1,5 +1,6 @@
 ﻿using CsvHelper;
 using CsvHelper.Configuration;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Globalization;
@@ -15,11 +16,18 @@ public class SeedController : ControllerBase
 {
     private readonly KpopContext _context;
     private readonly string _pathName;
+
+    private readonly UserManager<KpopUser> _userManager;
+    private readonly RoleManager<IdentityRole> _roleManager;
     private readonly IConfiguration _configuration;
 
-    public SeedController(KpopContext context, IHostEnvironment environment, IConfiguration configuration)
+    public SeedController(KpopContext context, IHostEnvironment environment,
+        UserManager<KpopUser> userManager, RoleManager<IdentityRole> roleManager,
+        IConfiguration configuration)
     {
         _context = context;
+        _userManager = userManager;
+        _roleManager = roleManager;
         _configuration = configuration;
         _pathName = Path.Combine(environment.ContentRootPath, "Data/kpop.csv");
     }
@@ -101,6 +109,69 @@ public class SeedController : ControllerBase
             await _context.SaveChangesAsync();
         }
         return new JsonResult(artistsByName.Count);
+    }
+
+    [HttpGet("Users")]
+    public async Task<IActionResult> CreateUsers()
+    {
+        const string roleUser = "RegisteredUser";
+        const string roleAdmin = "Administrator";
+
+        if (await _roleManager.FindByNameAsync(roleUser) is null)
+        {
+            await _roleManager.CreateAsync(new IdentityRole(roleUser));
+        }
+        if (await _roleManager.FindByNameAsync(roleAdmin) is null)
+        {
+            await _roleManager.CreateAsync(new IdentityRole(roleAdmin));
+        }
+
+        List<KpopUser> addedUserList = new();
+        (string name, string email) = ("admin", "admin@email.com");
+
+        if (await _userManager.FindByNameAsync(name) is null)
+        {
+            KpopUser userAdmin = new()
+            {
+                UserName = name,
+                Email = email,
+                SecurityStamp = Guid.NewGuid().ToString()
+            };
+            await _userManager.CreateAsync(userAdmin, _configuration["DefaultPasswords:Administrator"]!);
+            await _userManager.AddToRolesAsync(userAdmin, new[] { roleUser, roleAdmin });
+            userAdmin.EmailConfirmed = true;
+            userAdmin.LockoutEnabled = false;
+            addedUserList.Add(userAdmin);
+        }
+
+        (string name, string email) registered = ("user", "user@email.com");
+
+        if (await _userManager.FindByNameAsync(registered.name) is null)
+        {
+            KpopUser user = new()
+            {
+                UserName = registered.name,
+                Email = registered.email,
+                SecurityStamp = Guid.NewGuid().ToString()
+            };
+            await _userManager.CreateAsync(user, _configuration["DefaultPasswords:RegisteredUser"]!);
+            await _userManager.AddToRoleAsync(user, roleUser);
+            user.EmailConfirmed = true;
+            user.LockoutEnabled = false;
+            addedUserList.Add(user);
+        }
+
+        if (addedUserList.Count > 0)
+        {
+            await _context.SaveChangesAsync();
+        }
+
+        return new JsonResult(new
+        {
+            addedUserList.Count,
+            Users = addedUserList
+        });
+
     }
 
 }
